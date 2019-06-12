@@ -9,6 +9,12 @@
 
     <!-- link list -->
     <link name="${prefix}base_link">
+        <inertial>
+          <!-- Volume: 8.1471195312e-02 -->
+          <mass value="339.75"/>
+          <origin xyz="9.9246680000e-02 -2.4612000000e-04 1.4070827000e-01" rpy="0 0 0"/>
+          <inertia ixx="7.9515980123e+00" ixy="5.4385596795e-03" ixz="4.5421853690e-01" iyy="1.5753474687e+01" iyz="-3.2102293886e-03" izz="1.8959429921e+01"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/base_link.stl"/>
@@ -22,6 +28,12 @@
         </collision>
     </link>
     <link name="${prefix}link_1_s">
+        <inertial>
+            <!-- Volume: 4.9276242188e-02 -->
+            <mass value="205.49"/>
+            <origin xyz="-9.1914370000e-02 -6.1544680000e-02 -1.5871903000e-01" rpy="0 0 0"/>
+            <inertia ixx="7.5403992232e+00" ixy="-1.9134508727e+00" ixz="1.6140167460e+00" iyy="1.3433361904e+01" iyz="1.5317619336e+00" izz="1.3669980332e+01"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/link_1_s.stl"/>
@@ -35,6 +47,12 @@
         </collision>
     </link>
     <link name="${prefix}link_2_l">
+        <inertial>
+            <!-- Volume: 6.3706386719e-02 -->
+            <mass value="265.67"/>
+            <origin xyz="5.0802600000e-03 1.8930130000e-02 5.3178894000e-01" rpy="0 0 0"/>
+            <inertia ixx="4.6345017369e+01" ixy="8.3217469371e-03" ixz="-7.6138641860e-02" iyy="4.6987719183e+01" iyz="-1.2047368689e+00" izz="2.8076249773e+00"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/link_2_l.stl"/>
@@ -48,6 +66,12 @@
         </collision>
     </link>
     <link name="${prefix}link_3_u">
+        <inertial>
+            <!-- Volume: 5.7388972656e-02 -->
+            <mass value="239.32"/>
+            <origin xyz="-3.5966534000e-01 -4.3365450000e-02 2.1203165000e-01" rpy="0 0 0"/>
+            <inertia ixx="6.9715660225e+00" ixy="2.8748574215e+00" ixz="6.6240295472e+00" iyy="4.6460384002e+01" iyz="-1.8873864091e+00" izz="4.4028745856e+01"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/link_3_u.stl"/>
@@ -61,6 +85,12 @@
         </collision>
     </link>
     <link name="${prefix}link_4_r">
+        <inertial>
+            <!-- Volume: 3.1516240230e-03 -->
+            <mass value="13.14"/>
+            <origin xyz="-1.3110336000e-01 1.3339760000e-02 3.8370000000e-05" rpy="0 0 0"/>
+            <inertia ixx="3.4357943954e-02" ixy="1.2151841781e-02" ixz="-9.9821883299e-05" iyy="9.6274118837e-02" iyz="5.3362763861e-05" izz="1.0083799409e-01"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/link_4_r.stl"/>
@@ -74,6 +104,12 @@
         </collision>
     </link>
     <link name="${prefix}link_5_b">
+        <inertial>
+            <!-- Volume: 5.9346689450e-03 -->
+            <mass value="24.75"/>
+            <origin xyz="-5.3321610000e-02 2.5772620000e-02 -8.1000000000e-07" rpy="0 0 0"/>
+            <inertia ixx="2.1990525207e-01" ixy="-4.3246560492e-02" ixz="4.4783125472e-06" iyy="2.1534928817e-01" iyz="1.4947252420e-06" izz="3.2785888352e-01"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/link_5_b.stl"/>
@@ -87,6 +123,12 @@
         </collision>
     </link>
     <link name="${prefix}link_6_t">
+        <inertial>
+            <!-- Volume: 4.5249841300e-04 -->
+            <mass value="1.89"/>
+            <origin xyz="-1.2108390000e-02 1.0946400000e-03 -1.4340000000e-05" rpy="0 0 0"/>
+            <inertia ixx="6.2693872588e-03" ixy="-7.2189870354e-06" ixz="-1.2123692907e-07" iyy="3.3193190428e-03" iyz="-3.6467813645e-07" izz="3.1451631879e-03"/>
+        </inertial>
         <visual>
             <geometry>
                 <mesh filename="package://motoman_gp180_support/meshes/gp180_120/visual/link_6_t.stl"/>
