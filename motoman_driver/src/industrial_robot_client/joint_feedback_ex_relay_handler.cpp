@@ -53,11 +53,11 @@ bool JointFeedbackExRelayHandler::init(SmplMsgConnection* connection,
 {
   ROS_INFO_STREAM("Creating joint_feedback_ex_relay_handler with " << robot_groups.size() << " groups");
   this->pub_joint_control_state_ =
-    this->node_.advertise<control_msgs::FollowJointTrajectoryFeedback>("feedback_states", 1);
+    this->node_.advertise<control_msgs::FollowJointTrajectoryFeedback>("feedback_states", 10);
   this->dynamic_pub_joint_control_state_ =
-    this->node_.advertise<motoman_msgs::DynamicJointTrajectoryFeedback>("dynamic_feedback_states", 1);
+    this->node_.advertise<motoman_msgs::DynamicJointTrajectoryFeedback>("dynamic_feedback_states", 10);
 
-  this->pub_joint_sensor_state_ = this->node_.advertise<sensor_msgs::JointState>("joint_states", 1);
+  this->pub_joint_sensor_state_ = this->node_.advertise<sensor_msgs::JointState>("joint_states", 10);
 
   this->robot_groups_ = robot_groups;
   this->version_0_ = false;
