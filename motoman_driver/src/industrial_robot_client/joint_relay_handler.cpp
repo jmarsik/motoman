@@ -59,10 +59,10 @@ bool JointRelayHandler::init(SmplMsgConnection* connection, int msg_type, std::m
     ns_str = iterator->second.get_ns();
 
     this->pub_joint_control_state_ = this->node_.advertise<control_msgs::FollowJointTrajectoryFeedback>(
-        ns_str + "/" + name_str + "/feedback_states", 1);
+        ns_str + "/" + name_str + "/feedback_states", 10);
 
     this->pub_joint_sensor_state_ =
-        this->node_.advertise<sensor_msgs::JointState>(ns_str + "/" + name_str + "/joint_states", 1);
+        this->node_.advertise<sensor_msgs::JointState>(ns_str + "/" + name_str + "/joint_states", 10);
 
     this->pub_controls_[robot_id] = this->pub_joint_control_state_;
     this->pub_states_[robot_id] = this->pub_joint_sensor_state_;
@@ -77,9 +77,9 @@ bool JointRelayHandler::init(SmplMsgConnection* connection, int msg_type, std::m
 bool JointRelayHandler::init(SmplMsgConnection* connection, int msg_type, std::vector<std::string>& joint_names)
 {
   this->pub_joint_control_state_ =
-    this->node_.advertise<control_msgs::FollowJointTrajectoryFeedback>("feedback_states", 1);
+    this->node_.advertise<control_msgs::FollowJointTrajectoryFeedback>("feedback_states", 10);
 
-  this->pub_joint_sensor_state_ = this->node_.advertise<sensor_msgs::JointState>("joint_states", 1);
+  this->pub_joint_sensor_state_ = this->node_.advertise<sensor_msgs::JointState>("joint_states", 10);
 
   // save "complete" joint-name list, preserving any blank entries for later use
   this->all_joint_names_ = joint_names;
