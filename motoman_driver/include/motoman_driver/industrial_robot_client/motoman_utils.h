@@ -53,6 +53,13 @@ namespace motoman_utils
  */
 bool getJointGroups(const std::string topic_param, std::map<int, RobotGroup> & robot_groups);
 
+void mapMerge(std::map<std::string, double> & mergeTo, const std::map<std::string, double> & mergeFrom);
+
+bool isWithinRange(const std::vector<std::string> & keys, const std::map<std::string, double> & lhs,
+                   const std::map<std::string, double> & rhs, const std::map<std::string, double> & full_ranges);
+bool isWithinRange(const std::vector<std::string> & lhs_keys, const std::vector<double> & lhs_values,
+                   const std::vector<std::string> & rhs_keys, const std::vector<double> & rhs_values, const std::map<std::string, double> & full_ranges);
+
 }  // namespace motoman_utils
 }  // namespace industrial_robot_client
 

@@ -49,7 +49,7 @@ namespace joint_trajectory_action
 {
 
 const double JointTrajectoryAction::WATCHD0G_PERIOD_ = 1.0;
-const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 0.001;
+const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 0.01;
 
 JointTrajectoryAction::JointTrajectoryAction() :
   action_server_(node_, "joint_trajectory_action",
@@ -67,9 +67,18 @@ JointTrajectoryAction::JointTrajectoryAction() :
   {
     std::string joint_path_action_name = robot_groups[i].get_ns() + "/" + robot_groups[i].get_name();
     std::vector<std::string> rg_joint_names = robot_groups[i].get_joint_names();
+    std::vector<double> rg_goal_tolerances = robot_groups[i].get_goal_tolerances();
     int group_number_int = robot_groups[i].get_group_id();
 
     all_joint_names_.insert(all_joint_names_.end(), rg_joint_names.begin(), rg_joint_names.end());
+
+    std::map<std::string, double> rg_goal_tolerances_map;
+    // handle empty goal tolerances (not set in topic_list parameter), use global goal tolerance
+    if (rg_goal_tolerances.size() == 0)
+      rg_goal_tolerances = std::vector<double>(rg_joint_names.size(), goal_threshold_);
+
+    industrial_robot_client::utils::toMap(rg_joint_names, rg_goal_tolerances, rg_goal_tolerances_map);
+    motoman_utils::mapMerge(all_goal_tolerances_, rg_goal_tolerances_map);
 
     // init maps
     has_active_goal_map_[group_number_int] = false;
@@ -738,10 +747,12 @@ bool JointTrajectoryAction::withinGoalConstraints(
   {
     int last_point = traj.points.size() - 1;
 
-    if (industrial_robot_client::utils::isWithinRange(
+    if (motoman_utils::isWithinRange(
           last_trajectory_state_->joint_names,
-          last_trajectory_state_->actual.positions, traj.joint_names,
-          traj.points[last_point].positions, goal_threshold_))
+          last_trajectory_state_->actual.positions,
+          traj.joint_names,
+          traj.points[last_point].positions,
+          all_goal_tolerances_))
     {
       rtn = true;
     }
@@ -778,12 +789,12 @@ bool JointTrajectoryAction::withinGoalConstraints(
         sorted_joint_names[sort_index] = traj.joint_names[ros_idx];
     }
 
-    if (industrial_robot_client::utils::isWithinRange(
+    if (motoman_utils::isWithinRange(
           robot_groups_[group_number].get_joint_names(),
           last_trajectory_state_map_[group_number]->actual.positions,
           sorted_joint_names,
           sorted_positions,
-          goal_threshold_))
+          all_goal_tolerances_))
     {
       rtn = true;
     }

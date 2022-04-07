@@ -31,6 +31,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <industrial_robot_client/utils.h>
+#include <industrial_utils/utils.h>
 #include "motoman_driver/industrial_robot_client/motoman_utils.h"
 #include "ros/ros.h"
 #include <map>
@@ -69,6 +71,7 @@ bool getJointGroups(const std::string topic_param, std::map<int, RobotGroup> & r
       ROS_INFO_STREAM("Loading group: " << topics_list[i]);
       RobotGroup rg;
       std::vector<std::string> rg_joint_names;
+      std::vector<double> rg_goal_tolerances;
 
       XmlRpc::XmlRpcValue joints;
 
@@ -78,8 +81,25 @@ bool getJointGroups(const std::string topic_param, std::map<int, RobotGroup> & r
         rg_joint_names.push_back(static_cast<std::string>(joints[jt]));
       }
 
-      XmlRpc::XmlRpcValue group_number;
+      XmlRpc::XmlRpcValue goal_tolerances;
 
+      if (topics_list[i].hasMember("goal_tolerances"))
+      {
+        goal_tolerances = topics_list[i]["goal_tolerances"];
+  
+        for (int jt = 0; jt < goal_tolerances.size(); jt++)
+        {
+          rg_goal_tolerances.push_back(static_cast<double>(goal_tolerances[jt]));
+        }
+
+        if (rg_joint_names.size() != rg_goal_tolerances.size())
+        {
+          ROS_ERROR_STREAM("Number of joints and their goal tolerances must be the same!");
+          return false;
+        }
+      }
+
+      XmlRpc::XmlRpcValue group_number;
 
       group_number = topics_list[i]["group"];
       int group_number_int = static_cast<int>(group_number);
@@ -105,6 +125,7 @@ bool getJointGroups(const std::string topic_param, std::map<int, RobotGroup> & r
       ROS_DEBUG_STREAM("  ns: " << ns_string);
       rg.set_group_id(group_number_int);
       rg.set_joint_names(rg_joint_names);
+      rg.set_goal_tolerances(rg_goal_tolerances);
       rg.set_name(name_string);
       rg.set_ns(ns_string);
 
@@ -119,6 +140,78 @@ bool getJointGroups(const std::string topic_param, std::map<int, RobotGroup> & r
     ROS_ERROR_STREAM("Failed to find " << topic_param << " parameter");
     return false;
   }
+}
+
+void mapMerge(std::map<std::string, double> & mergeTo, const std::map<std::string, double> & mergeFrom)
+{
+  // similar to C++ 17 merge method, which is not available in C++ 11
+  for(const auto& it : mergeFrom)
+  {
+    mergeTo[it.first] = it.second;
+  }
+}
+
+bool isWithinRange(const std::vector<std::string> & keys, const std::map<std::string, double> & lhs,
+                   const std::map<std::string, double> & rhs, const std::map<std::string, double> & full_ranges)
+{
+  bool rtn = false;
+
+  if ((keys.size() != rhs.size()) || (keys.size() != lhs.size()))
+  {
+    ROS_ERROR_STREAM(__FUNCTION__ << "::Size mistmatch ::lhs size: " << lhs.size() <<
+                     " rhs size: " << rhs.size() << " key size: " << keys.size());
+
+    rtn = false;
+  }
+  else
+  {
+    rtn = true; // Assume within range, catch exception in loop below
+
+    // This loop will not run for empty vectors, results in return of true
+    for (size_t i = 0; i < keys.size(); ++i)
+    {
+      // find the joint goal tolerance
+      auto ix = full_ranges.find(keys[i]);
+      if (ix == full_ranges.end())
+      {
+        ROS_ERROR_STREAM(__FUNCTION__ << "::Goal tolerance for joint " << keys[i] << " not found");
+        
+        return false;
+      }
+      // Calculating the half range causes some precision loss, but it's good enough
+      double half_range = full_ranges.at(keys[i]) / 2.0;
+
+      if (fabs(lhs.at(keys[i]) - rhs.at(keys[i])) > fabs(half_range))
+      {
+        rtn = false;
+        break;
+      }
+    }
+
+  }
+
+  return rtn;
+}
+
+bool isWithinRange(const std::vector<std::string> & lhs_keys, const std::vector<double> & lhs_values,
+                   const std::vector<std::string> & rhs_keys, const std::vector<double> & rhs_values, const std::map<std::string, double> & full_ranges)
+{
+  bool rtn = false;
+  std::map<std::string, double> lhs_map;
+  std::map<std::string, double> rhs_map;
+  if (industrial_utils::isSimilar(lhs_keys, rhs_keys))
+  {
+    if (industrial_robot_client::utils::toMap(lhs_keys, lhs_values, lhs_map) && industrial_robot_client::utils::toMap(rhs_keys, rhs_values, rhs_map))
+    {
+      rtn = isWithinRange(lhs_keys, lhs_map, rhs_map, full_ranges);
+    }
+  }
+  else
+  {
+    ROS_ERROR_STREAM(__FUNCTION__ << "::Key vectors are not similar");
+    rtn = false;
+  }
+  return rtn;
 }
 
 }  // namespace motoman_utils

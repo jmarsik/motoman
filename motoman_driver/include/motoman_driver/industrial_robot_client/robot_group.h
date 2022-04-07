@@ -47,6 +47,11 @@ public:
     return this->joint_names_;
   }
 
+  std::vector<double> get_goal_tolerances()
+  {
+    return this->goal_tolerances_;
+  }
+
   std::string get_name()
   {
     return this->name_;
@@ -77,14 +82,19 @@ public:
     this->group_id_ = gid;
   }
 
-
   void set_joint_names(std::vector<std::string> jnames)
   {
     this->joint_names_ = jnames;
   }
 
+  void set_goal_tolerances(std::vector<double> tolerances)
+  {
+    this->goal_tolerances_ = tolerances;
+  }
+
 protected:
   std::vector<std::string> joint_names_;
+  std::vector<double> goal_tolerances_;
   int group_id_;
   std::string name_;
   std::string ns_;

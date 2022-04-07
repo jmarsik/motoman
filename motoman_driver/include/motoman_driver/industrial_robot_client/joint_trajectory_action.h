@@ -145,6 +145,8 @@ private:
 
   std::vector<std::string> all_joint_names_;
 
+  std::map<std::string, double> all_goal_tolerances_;
+
   /**
    * \brief The default goal joint threshold see(goal_threshold). Unit
    * are joint specific (i.e. radians or meters).
