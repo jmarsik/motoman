@@ -83,7 +83,6 @@ private:
    * \brief Internal ROS node handle
    */
   ros::NodeHandle node_;
-  actionlib::ActionServer<control_msgs::FollowJointTrajectoryAction>* actionServer_;
 
   /**
    * \brief Internal action server
