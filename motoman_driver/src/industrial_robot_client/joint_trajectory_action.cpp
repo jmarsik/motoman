@@ -249,120 +249,105 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
       }
 
       // Sends the trajectory along to the controller
-      if (withinGoalConstraints(last_trajectory_state_,
-                                gh.getGoal()->trajectory))
-      {
-        ROS_INFO_STREAM_NAMED(log_name, log_prepend << "Already within goal constraints, setting goal succeeded");
-        gh.setAccepted();
-        gh.setSucceeded();
-        has_active_goal_ = false;
+      gh.setAccepted();
+      active_goal_ = gh;
+      has_active_goal_ = true;
 
-        for (int group_index = 0; group_index < robot_groups_.size(); group_index++) {
-          has_active_goal_map_[group_index] = false;
-        }
+      ROS_INFO_STREAM_NAMED(log_name, log_prepend << "Publishing trajectory");
+
+      current_traj_ = active_goal_.getGoal()->trajectory;
+
+      for (int group_index = 0; group_index < robot_groups_.size(); group_index++) {
+        // Tell the rest of the system this robot id has an active goal.
+        has_active_goal_map_[group_index] = true;
+        // Set the goal as the active goal for this robot id.
+        active_goal_map_[group_index] = gh;
+        current_traj_map_[group_index] = active_goal_map_[group_index].getGoal()->trajectory;
       }
-      else
-      {
-        gh.setAccepted();
-        active_goal_ = gh;
-        has_active_goal_ = true;
-
-        ROS_INFO_STREAM_NAMED(log_name, log_prepend << "Publishing trajectory");
-
-        current_traj_ = active_goal_.getGoal()->trajectory;
-
-        for (int group_index = 0; group_index < robot_groups_.size(); group_index++) {
-          // Tell the rest of the system this robot id has an active goal.
-          has_active_goal_map_[group_index] = true;
-          // Set the goal as the active goal for this robot id.
-          active_goal_map_[group_index] = gh;
-          current_traj_map_[group_index] = active_goal_map_[group_index].getGoal()->trajectory;
-        }
+      
+      motoman_msgs::DynamicJointTrajectory dyn_traj;
+      
+      for (int i = 0; i < gh.getGoal()->trajectory.points.size(); i++) {
+        motoman_msgs::DynamicJointPoint dpoint;
         
-        motoman_msgs::DynamicJointTrajectory dyn_traj;
-        
-        for (int i = 0; i < gh.getGoal()->trajectory.points.size(); i++) {
-          motoman_msgs::DynamicJointPoint dpoint;
+        for (int rbt_idx = 0; rbt_idx < robot_groups_.size(); rbt_idx++) {
+          int num_joints = robot_groups_[rbt_idx].get_joint_names().size();
+          motoman_msgs::DynamicJointsGroup dyn_group;
           
-          for (int rbt_idx = 0; rbt_idx < robot_groups_.size(); rbt_idx++) {
-            int num_joints = robot_groups_[rbt_idx].get_joint_names().size();
-            motoman_msgs::DynamicJointsGroup dyn_group;
-            
-            // Check if positions vector is empty.
-            if (gh.getGoal()->trajectory.points[i].positions.empty()) {
-              std::vector<double> positions(num_joints, 0.0);
-              dyn_group.positions = positions;
-            }
-            
-            // Check if velocities vector is empty.
-            if (gh.getGoal()->trajectory.points[i].velocities.empty()) {
-              std::vector<double> velocities(num_joints, 0.0);
-              dyn_group.velocities = velocities;
-            }
-            
-            // Check if acceleration vector is empty.
-            if (gh.getGoal()->trajectory.points[i].accelerations.empty()) {
-              std::vector<double> accelerations(num_joints, 0.0);
-              dyn_group.accelerations = accelerations;
-            }
-            
-            // Check if effort vector is empty.
-            if (gh.getGoal()->trajectory.points[i].effort.empty()) {
-              std::vector<double> effort(num_joints, 0.0);
-              dyn_group.effort = effort;
-            }
-            
-            // for each joint in robot group
-            for (int j = 0; j < num_joints; j++) {
-              // find this joint index trajectory joints
-              size_t ros_idx = std::find(gh.getGoal()->trajectory.joint_names.begin(), gh.getGoal()->trajectory.joint_names.end(), robot_groups_[rbt_idx].get_joint_names()[j]) - gh.getGoal()->trajectory.joint_names.begin();
-              
-              // Insert position value for joint j.
-              if (!gh.getGoal()->trajectory.points[i].positions.empty()) {
-                dyn_group.positions.insert(
-                  dyn_group.positions.begin() + j,
-                  *(gh.getGoal()->trajectory.points[i].positions.begin() + ros_idx));
-              }
-              
-              // Insert velocity value for joint j.
-              if (!gh.getGoal()->trajectory.points[i].velocities.empty()) {
-                dyn_group.velocities.insert(
-                  dyn_group.velocities.begin() + j,
-                  *(gh.getGoal()->trajectory.points[i].velocities.begin() + ros_idx));
-              }
-              
-              // Insert acceleration value for joint j.
-              if (!gh.getGoal()->trajectory.points[i].accelerations.empty()) {
-                dyn_group.accelerations.insert(
-                  dyn_group.accelerations.begin() + j,
-                  *(gh.getGoal()->trajectory.points[i].accelerations.begin() + ros_idx));
-              }
-              
-              // Insert effort value for joint j.
-              if (!gh.getGoal()->trajectory.points[i].effort.empty()) {
-                dyn_group.effort.insert(
-                  dyn_group.effort.begin() + j,
-                  *(gh.getGoal()->trajectory.points[i].effort.begin() + ros_idx));
-              }
-            }
-            dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
-            dyn_group.group_number = rbt_idx;
-            dyn_group.num_joints = dyn_group.positions.size();
-            
-            dpoint.groups.push_back(dyn_group);
+          // Check if positions vector is empty.
+          if (gh.getGoal()->trajectory.points[i].positions.empty()) {
+            std::vector<double> positions(num_joints, 0.0);
+            dyn_group.positions = positions;
           }
-          dpoint.num_groups = dpoint.groups.size();
-          dyn_traj.points.push_back(dpoint);
+          
+          // Check if velocities vector is empty.
+          if (gh.getGoal()->trajectory.points[i].velocities.empty()) {
+            std::vector<double> velocities(num_joints, 0.0);
+            dyn_group.velocities = velocities;
+          }
+          
+          // Check if acceleration vector is empty.
+          if (gh.getGoal()->trajectory.points[i].accelerations.empty()) {
+            std::vector<double> accelerations(num_joints, 0.0);
+            dyn_group.accelerations = accelerations;
+          }
+          
+          // Check if effort vector is empty.
+          if (gh.getGoal()->trajectory.points[i].effort.empty()) {
+            std::vector<double> effort(num_joints, 0.0);
+            dyn_group.effort = effort;
+          }
+          
+          // for each joint in robot group
+          for (int j = 0; j < num_joints; j++) {
+            // find this joint index trajectory joints
+            size_t ros_idx = std::find(gh.getGoal()->trajectory.joint_names.begin(), gh.getGoal()->trajectory.joint_names.end(), robot_groups_[rbt_idx].get_joint_names()[j]) - gh.getGoal()->trajectory.joint_names.begin();
+            
+            // Insert position value for joint j.
+            if (!gh.getGoal()->trajectory.points[i].positions.empty()) {
+              dyn_group.positions.insert(
+                dyn_group.positions.begin() + j,
+                *(gh.getGoal()->trajectory.points[i].positions.begin() + ros_idx));
+            }
+            
+            // Insert velocity value for joint j.
+            if (!gh.getGoal()->trajectory.points[i].velocities.empty()) {
+              dyn_group.velocities.insert(
+                dyn_group.velocities.begin() + j,
+                *(gh.getGoal()->trajectory.points[i].velocities.begin() + ros_idx));
+            }
+            
+            // Insert acceleration value for joint j.
+            if (!gh.getGoal()->trajectory.points[i].accelerations.empty()) {
+              dyn_group.accelerations.insert(
+                dyn_group.accelerations.begin() + j,
+                *(gh.getGoal()->trajectory.points[i].accelerations.begin() + ros_idx));
+            }
+            
+            // Insert effort value for joint j.
+            if (!gh.getGoal()->trajectory.points[i].effort.empty()) {
+              dyn_group.effort.insert(
+                dyn_group.effort.begin() + j,
+                *(gh.getGoal()->trajectory.points[i].effort.begin() + ros_idx));
+            }
+          }
+          dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
+          dyn_group.group_number = rbt_idx;
+          dyn_group.num_joints = dyn_group.positions.size();
+          
+          dpoint.groups.push_back(dyn_group);
         }
-        
-        dyn_traj.header = gh.getGoal()->trajectory.header;
-        dyn_traj.header.stamp = ros::Time::now();
-        
-        // Publishing with joints for all of the groups
-        dyn_traj.joint_names = all_joint_names_;
-        
-        this->pub_trajectory_command_.publish(dyn_traj);
+        dpoint.num_groups = dpoint.groups.size();
+        dyn_traj.points.push_back(dpoint);
       }
+      
+      dyn_traj.header = gh.getGoal()->trajectory.header;
+      dyn_traj.header.stamp = ros::Time::now();
+      
+      // Publishing with joints for all of the groups
+      dyn_traj.joint_names = all_joint_names_;
+      
+      this->pub_trajectory_command_.publish(dyn_traj);
     }
     else
     {
@@ -441,74 +426,63 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh, int
         abortGoal(group_number);
       }
       // Sends the trajectory along to the controller
-      if (withinGoalConstraints(last_trajectory_state_map_[group_number],
-                                gh.getGoal()->trajectory, group_number))
+      gh.setAccepted();
+      active_goal_map_[group_number] = gh;
+      has_active_goal_map_[group_number] = true;
+
+      ROS_INFO_STREAM_NAMED(log_name, log_prepend << "Publishing trajectory");
+
+      current_traj_map_[group_number] = active_goal_map_[group_number].getGoal()->trajectory;
+
+      int num_joints = robot_groups_[group_number].get_joint_names().size();
+
+      motoman_msgs::DynamicJointTrajectory dyn_traj;
+
+      for (size_t i = 0; i < current_traj_map_[group_number].points.size(); ++i)
       {
-        ROS_INFO_STREAM_NAMED(log_name, log_prepend << "Already within goal constraints, setting goal succeeded");
-        gh.setAccepted();
-        gh.setSucceeded();
-        has_active_goal_map_[group_number] = false;
-      }
-      else
-      {
-        gh.setAccepted();
-        active_goal_map_[group_number] = gh;
-        has_active_goal_map_[group_number] = true;
+        motoman_msgs::DynamicJointsGroup dyn_group;
+        motoman_msgs::DynamicJointPoint dyn_point;
 
-        ROS_INFO_STREAM_NAMED(log_name, log_prepend << "Publishing trajectory");
-
-        current_traj_map_[group_number] = active_goal_map_[group_number].getGoal()->trajectory;
-
-        int num_joints = robot_groups_[group_number].get_joint_names().size();
-
-        motoman_msgs::DynamicJointTrajectory dyn_traj;
-
-        for (size_t i = 0; i < current_traj_map_[group_number].points.size(); ++i)
+        if (gh.getGoal()->trajectory.points[i].positions.empty())
         {
-          motoman_msgs::DynamicJointsGroup dyn_group;
-          motoman_msgs::DynamicJointPoint dyn_point;
-
-          if (gh.getGoal()->trajectory.points[i].positions.empty())
-          {
-            std::vector<double> positions(num_joints, 0.0);
-            dyn_group.positions = positions;
-          }
-          else
-            dyn_group.positions = gh.getGoal()->trajectory.points[i].positions;
-
-          if (gh.getGoal()->trajectory.points[i].velocities.empty())
-          {
-            std::vector<double> velocities(num_joints, 0.0);
-            dyn_group.velocities = velocities;
-          }
-          else
-            dyn_group.velocities = gh.getGoal()->trajectory.points[i].velocities;
-          if (gh.getGoal()->trajectory.points[i].accelerations.empty())
-          {
-            std::vector<double> accelerations(num_joints, 0.0);
-            dyn_group.accelerations = accelerations;
-          }
-          else
-            dyn_group.accelerations = gh.getGoal()->trajectory.points[i].accelerations;
-          if (gh.getGoal()->trajectory.points[i].effort.empty())
-          {
-            std::vector<double> effort(num_joints, 0.0);
-            dyn_group.effort = effort;
-          }
-          else
-            dyn_group.effort = gh.getGoal()->trajectory.points[i].effort;
-          dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
-          dyn_group.group_number = group_number;
-          dyn_group.num_joints = robot_groups_[group_number].get_joint_names().size();
-          dyn_point.groups.push_back(dyn_group);
-
-          dyn_point.num_groups = 1;
-          dyn_traj.points.push_back(dyn_point);
+          std::vector<double> positions(num_joints, 0.0);
+          dyn_group.positions = positions;
         }
-        dyn_traj.header = gh.getGoal()->trajectory.header;
-        dyn_traj.joint_names = gh.getGoal()->trajectory.joint_names;
-        this->pub_trajectories_[group_number].publish(dyn_traj);
+        else
+          dyn_group.positions = gh.getGoal()->trajectory.points[i].positions;
+
+        if (gh.getGoal()->trajectory.points[i].velocities.empty())
+        {
+          std::vector<double> velocities(num_joints, 0.0);
+          dyn_group.velocities = velocities;
+        }
+        else
+          dyn_group.velocities = gh.getGoal()->trajectory.points[i].velocities;
+        if (gh.getGoal()->trajectory.points[i].accelerations.empty())
+        {
+          std::vector<double> accelerations(num_joints, 0.0);
+          dyn_group.accelerations = accelerations;
+        }
+        else
+          dyn_group.accelerations = gh.getGoal()->trajectory.points[i].accelerations;
+        if (gh.getGoal()->trajectory.points[i].effort.empty())
+        {
+          std::vector<double> effort(num_joints, 0.0);
+          dyn_group.effort = effort;
+        }
+        else
+          dyn_group.effort = gh.getGoal()->trajectory.points[i].effort;
+        dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
+        dyn_group.group_number = group_number;
+        dyn_group.num_joints = robot_groups_[group_number].get_joint_names().size();
+        dyn_point.groups.push_back(dyn_group);
+
+        dyn_point.num_groups = 1;
+        dyn_traj.points.push_back(dyn_point);
       }
+      dyn_traj.header = gh.getGoal()->trajectory.header;
+      dyn_traj.joint_names = gh.getGoal()->trajectory.joint_names;
+      this->pub_trajectories_[group_number].publish(dyn_traj);
     }
     else
     {
